@@ -43,15 +43,11 @@ AI Business Proposal Generator is an intelligent system that creates customized 
 
 3. **Install dependencies**:
     ```bash
+    cd proposal
     poetry install
     ```
 
 4. **Activate the virtual environment**:
     ```bash
     poetry env activate
-    ```
-
-5. **Run the project**:
-    ```bash
-    poetry run python main.py
     ```
