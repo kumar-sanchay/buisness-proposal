@@ -1,5 +1,5 @@
 from typing import TypedDict, List
-
+from langgraph.graph import MessagesState
 
 
 class ClientInfo(TypedDict):
@@ -38,7 +38,7 @@ class UserRequirement(TypedDict):
     technical_depth: str
 
 
-class GraphState(TypedDict):
+class GraphState(MessagesState):
     """
     Represent state of our graph.
 
