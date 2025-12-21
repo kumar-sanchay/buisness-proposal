@@ -38,7 +38,7 @@ class UserRequirement(TypedDict):
     technical_depth: str
 
 
-class GraphState(MessagesState):
+class GraphState(TypedDict):
     """
     Represent state of our graph.
 

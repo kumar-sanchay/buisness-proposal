@@ -1,17 +1,19 @@
 from dotenv import load_dotenv
-
+from proposal.core.logging_setup import setup_logging
 load_dotenv()
+setup_logging()
 
 from langgraph.graph import StateGraph, END
 from langchain_tavily import TavilySearch
 
-from proposal.core.graph_state import GraphState
+from proposal.core.graph_state import GraphState, ClientInfo, UserRequirement
 from proposal.graph import constants
 from proposal.nodes import (get_generate_proposal_section_node, get_retriever_node, get_grade_document_node,
                             get_websearch_client_node, get_websearch_document_node)
 
 from proposal.core.llm import get_llm
 from proposal.indexing.retriever import get_retriever
+
 
 
 def build_graph():
@@ -51,7 +53,45 @@ def build_graph():
     graph.add_edge(constants.GENERATE, END)
 
     app = graph.compile()
-    app.get_graph().draw_mermaid_png(output_file_path="test_graph.png")
+    # app.get_graph().draw_mermaid_png(output_file_path="test_graph.png")
+    
+    test_user_requirement: UserRequirement = {
+        "problem_statement": (
+            "The client is struggling with slow and inconsistent creation of "
+            "custom consulting proposals, leading to longer sales cycles and "
+            "reduced win rates."
+        ),
+        "client_info": {
+            "client_name": "Acme Financial Services",
+            "industry": "Banking and Financial Services"
+        },
+        "proposal_goal": (
+            "Design and implement an AI-powered consulting proposal generator "
+            "that can create high-quality, client-specific proposal sections "
+            "using internal knowledge and external research."
+        ),
+        "approach": (
+            "Leverage Retrieval-Augmented Generation (RAG) with a modular "
+            "LangGraph-based workflow. Use vector databases for internal content, "
+            "web search for external insights, and LLM-based scoring and refinement "
+            "for proposal sections."
+        ),
+        "timeline": "8–10 weeks including discovery, implementation, testing, and rollout",
+        "scope_exclusions": (
+            "Does not include CRM integration, UI/UX design for a sales portal, "
+            "or long-term model fine-tuning beyond initial deployment."
+        ),
+        "budget_range": "USD 50,000 – 75,000",
+        "technical_depth": "Medium to High (target audience includes technical decision-makers)"
+    }
+    initial_state = GraphState(
+        user_requirement=test_user_requirement,
+        documents=[],
+        client_websearch=[],
+        generated_section=""
+    )
+
+    result = app.invoke(initial_state)
 
 
 if __name__ == '__main__':
