@@ -20,13 +20,14 @@ def get_grade_document_node(llm: BaseChatModel, proposal_section: str):
         relevant_docs: List[Document] = []
 
         for doc in documents:
-            score: GradeDocuments = get_document_grading_chain(llm).invoke({
+            score: str = get_document_grading_chain(llm).invoke({
                 'document': doc,
-                'requirement': state['user_requirement'],
-                'section': proposal_section
+                'requirement': state['user_requirement']['problem_statement'],
+                'section': proposal_section,
+                'messages': state['messages']
             })
 
-            if score.binary_score == 'yes':
+            if score == 'yes':
                 relevant_docs.append(doc)
         
         logger.info(f"Graded documents, {len(relevant_docs)} relevant for section {proposal_section}.")
