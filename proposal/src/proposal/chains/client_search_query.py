@@ -18,7 +18,6 @@ def get_client_search_queries(llm: BaseChatModel):
     query_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
-            MessagesPlaceholder(variable_name='messages'),
             ("human", "Client name: {client_name}\n\nClient's Industry: {industry}")
         ]
     )

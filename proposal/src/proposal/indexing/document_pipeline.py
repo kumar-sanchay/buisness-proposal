@@ -1,0 +1,87 @@
+import tempfile
+import requests
+import logging
+from typing import List
+from pathlib import Path
+from PyPDF2 import PdfReader
+from unstructured.partition.pdf import partition_pdf
+from unstructured.documents.elements import Element
+from langchain_community.docstore.document import Document
+
+from proposal.indexing.stages import (
+    ProposalRelevanceCheck,
+    DocumentChunker,
+    ChunkScoreAnnotator,
+    FilterChunks
+)
+from proposal.indexing.vectorstore import save_documents
+
+LOGGER = logging.getLogger(__name__)
+
+
+def download_pdf_into_temp(url: str):
+    LOGGER.info(f"Downloading PDF from URL: {url}")
+    response = requests.get(url=url, stream=True)
+    response.raise_for_status()
+
+    pdf_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+    pdf_file.write(response.content)
+    pdf_file.close()
+
+    return Path(pdf_file.name)
+
+
+def is_pdf_file(path: str) -> bool:
+    try:
+        with open(path, "rb") as f:
+            header = f.read(5)
+        return header == b"%PDF-"
+    except Exception:
+        return False
+
+
+def is_pdf_pages_under_limit(path: str) -> bool:
+    reader = PdfReader(path)
+    return len(reader.pages) <= 50
+
+
+def run_pipeline(url: str, industry: str) -> bool:
+    
+    LOGGER.info(f"Running document pipeline for URL: {url}")
+
+    pdf_path = None
+
+    try:
+        pdf_path: Path = download_pdf_into_temp(url)
+
+        if not is_pdf_file(pdf_path) and not is_pdf_pages_under_limit(pdf_path):
+            return False
+
+        elements: List[Element] = partition_pdf(
+            filename=pdf_path,
+            strategy="hi_res",
+            infer_table_structure=True
+        )
+        elements = ProposalRelevanceCheck(
+        elements=elements).run()
+        chunks: List[Document] = DocumentChunker(elements=elements).run()
+        chunks = ChunkScoreAnnotator(chunks=chunks).run()
+        chunks = FilterChunks(chunks=chunks).run()
+        
+        for chunk in chunks:
+            chunk.metadata['industry'] = industry
+
+        import pdb;pdb.set_trace();
+        save_documents(documents=chunks)
+
+    except Exception as e:
+        LOGGER.exception("Exception on parser pipeline: ", e)
+        return False
+    finally:
+        if pdf_path:
+            pdf_path.unlink()
+    
+    LOGGER.info(f"Completed document pipeline for URL: {url}")
+
+    return True
+

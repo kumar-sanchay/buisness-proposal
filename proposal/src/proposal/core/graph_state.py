@@ -1,5 +1,5 @@
 from typing import TypedDict, List
-from langgraph.graph import MessagesState
+from langchain_community.docstore.document import Document
 
 
 class ClientInfo(TypedDict):
@@ -38,7 +38,7 @@ class UserRequirement(TypedDict):
     technical_depth: str
 
 
-class GraphState(MessagesState):
+class GraphState(TypedDict):
     """
     Represent state of our graph.
 
@@ -49,6 +49,7 @@ class GraphState(MessagesState):
         generated_section: Generated proposal section
     """
     user_requirement: UserRequirement
-    documents: List[str]
+    section_documents: List[Document]
     client_websearch: List[str]
     generated_section: str
+    generated_section_queries: List[Document] = []

@@ -87,8 +87,8 @@ with right_col:
             }
 
             with st.spinner("Generating proposal..."):
-                result_state = build_graph(user_requirement=user_requirement)
+                generated_section = build_graph(user_requirement=user_requirement)
 
-            st.markdown(result_state["generated_section"])
+            st.markdown(generated_section)
     else:
         st.info("Fill the form and click **Generate Proposal**")

@@ -4,7 +4,7 @@ from langchain_community.docstore.document import Document
 from unstructured.partition.pdf import partition_pdf
 from unstructured.documents.elements import Title, ListItem, Table, Element
 
-from proposal.preprocessing.constants import WEIGHTED_PROPOSAL_KEYWORDS, PROPOSAL_RELEVANCE_THRESHOLD
+from proposal.indexing.constants import WEIGHTED_PROPOSAL_KEYWORDS, PROPOSAL_RELEVANCE_THRESHOLD
 
 
 LOGGER = logging.getLogger(__name__)
@@ -36,6 +36,10 @@ class ProposalRelevanceCheck(Stage):
         full_text: str = " ".join(e.text.lower() for e in self.elements if e.text)
 
         LOGGER.info(f"Full text for relevance check length: {len(full_text)}")
+
+        if "request for proposal" in full_text:  # Quick check for RFP presence
+            LOGGER.info("Detected 'request for proposal' in document; marking as irrelevant.")
+            return []
 
         for keyword, weight in WEIGHTED_PROPOSAL_KEYWORDS.items():
             keyword_score += full_text.count(keyword) * weight
@@ -140,7 +144,7 @@ class ChunkScoreAnnotator(Stage):
         super().__init__()
         self.chunks = chunks
 
-    def __score_chunk(self, chunk: Document) -> int:
+    def __score_chunk(self, chunk: Document) -> tuple[int, Document]:
         text = chunk.page_content.lower()
         score = 0
 
@@ -148,6 +152,8 @@ class ChunkScoreAnnotator(Stage):
             for keyword, weight in WEIGHTED_PROPOSAL_KEYWORDS.items():
                 if keyword in chunk.metadata['raw_heading'].lower():
                     score += weight
+                    chunk.metadata['section'] = keyword
+                    break
         
         for keyword, weight in WEIGHTED_PROPOSAL_KEYWORDS.items():
             if keyword in text:
@@ -161,15 +167,18 @@ class ChunkScoreAnnotator(Stage):
         if "table of contents" in text:  # Penalize if chunk is a table of contents
             score -= 5
         
-        return score
+        if "section" not in chunk.metadata:  # Penalize if no section identified
+            score -= 100
+        
+        return score, chunk
 
     def run(self) -> List[Document]:
         LOGGER.info("Starting Chunk Scoring")
 
         for idx, chunk in enumerate(self.chunks):
-            score = self.__score_chunk(chunk)
-
-            self.chunks[idx].metadata["chunk_score"] = score
+            score, chunk = self.__score_chunk(chunk)
+            chunk.metadata['chunk_score'] = score
+            self.chunks[idx] = chunk
         
         LOGGER.info(f"Completed Chunk Scoring for {len(self.chunks)} chunks")
 
@@ -221,5 +230,3 @@ if __name__ == '__main__':
     chunks = DocumentChunker(elements=elements).run()
     chunks = ChunkScoreAnnotator(chunks=chunks).run()
     chunks = FilterChunks(chunks=chunks).run()
-
-    import pdb;pdb.set_trace();

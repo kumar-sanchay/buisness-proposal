@@ -85,7 +85,6 @@ def generate_proposal_section(llm: BaseChatModel):
     query_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
-            MessagesPlaceholder(variable_name='messages'),
             ("human", human_prompt)
         ]
     )

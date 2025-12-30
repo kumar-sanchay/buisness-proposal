@@ -5,27 +5,34 @@ setup_logging()
 
 from langgraph.graph import StateGraph, END
 from langchain_tavily import TavilySearch
+from langchain_community.tools.tavily_search import TavilySearchResults
 
-from proposal.core.graph_state import GraphState, ClientInfo, UserRequirement
+from proposal.core.graph_state import GraphState, UserRequirement, ClientInfo
 from proposal.graph import constants
 from proposal.nodes import (get_generate_proposal_section_node, get_retriever_node, get_grade_document_node,
                             get_websearch_client_node, get_websearch_document_node)
 
 from proposal.core.llm import get_llm
-from proposal.indexing.retriever import get_retriever
+from proposal.indexing.vectorstore import get_retriever
 
 
 
 def build_graph(user_requirement: UserRequirement, proposal_section: str = "Executive Summary"):
     llm = get_llm()
     tavily_search = TavilySearch(max_results=2)
+
+    tavily_search_results = TavilySearchResults(
+        max_results=3,
+        search_depth="advanced",
+        include_raw_content=True,
+    )
     retriever = get_retriever()
 
     graph = StateGraph(GraphState)
-    graph.add_node(constants.RETRIEVE, get_retriever_node(retriever=retriever))
+    graph.add_node(constants.RETRIEVE, get_retriever_node(llm= llm, retriever=retriever, section=proposal_section))
     graph.add_node(constants.GRADE_DOCUMENTS, get_grade_document_node(llm=llm, proposal_section=proposal_section))
     graph.add_node(constants.WEBSEARCH_DOCUMENT, get_websearch_document_node(llm=llm, proposal_section=proposal_section,
-                                                                              tavily=tavily_search))
+                                                                              tavily=tavily_search_results))
     graph.add_node(constants.WEBSEARCH_CLIENT, get_websearch_client_node(llm=llm, tavily=tavily_search))
     graph.add_node(constants.GENERATE, get_generate_proposal_section_node(llm=llm, proposal_section=proposal_section))
 
@@ -34,7 +41,7 @@ def build_graph(user_requirement: UserRequirement, proposal_section: str = "Exec
 
     def web_search_document_condition(state: GraphState):
 
-        if len(state['documents']) >= 3:
+        if len(state["section_documents"]) >= 1:
             return constants.WEBSEARCH_CLIENT
         return constants.WEBSEARCH_DOCUMENT
     
@@ -46,7 +53,7 @@ def build_graph(user_requirement: UserRequirement, proposal_section: str = "Exec
                                 }
         )
     
-    graph.add_edge(constants.WEBSEARCH_DOCUMENT, constants.GRADE_DOCUMENTS)
+    graph.add_edge(constants.WEBSEARCH_DOCUMENT, constants.RETRIEVE)
     graph.add_edge(constants.WEBSEARCH_CLIENT, constants.GENERATE)
     graph.add_edge(constants.GENERATE, END)
 
@@ -86,12 +93,26 @@ def build_graph(user_requirement: UserRequirement, proposal_section: str = "Exec
         user_requirement=user_requirement,
         documents=[],
         client_websearch=[],
-        generated_section=""
+        generated_section="",
+        generated_section_queries=[]
     )
 
     result: GraphState = app.invoke(initial_state)
-    return result.generated_section
+    return result["generated_section"]
 
 
 if __name__ == '__main__':
-    build_graph()
+    user_requirement: UserRequirement = {
+        "problem_statement": '',
+        "client_info": {
+            "client_name": '',
+            "industry": '',
+        },
+        "proposal_goal": '',
+        "approach": '',
+        "timeline": '',
+        "scope_exclusions": '',
+        "budget_range": '',
+        "technical_depth": '',
+    }
+    build_graph(user_requirement=user_requirement)

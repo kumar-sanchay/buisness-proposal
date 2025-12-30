@@ -1,32 +1,53 @@
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.output_parsers import PydanticOutputParser
 
 from proposal.core.schemas import DocumentSearchQuery
 
 
+
 def get_section_search_queries(llm: BaseChatModel):
 
-    structured_output = llm.with_structured_output(DocumentSearchQuery)
 
     system_prompt = """
-        You are an expert consulting researcher.
-        Your task is to generate a list of exactly 3 web search queries list that will be used to find real consulting proposal section examples for a given proposal section.
-        The queries should:
-        1) Help find examples of the same proposal section from the web
-        2) Prefer content from consulting firms, proposal templates, case studies, or whitepapers
-        3) Be specific and actionable, not generic theory
-        4) Focus on section-level examples, not full proposals or general concepts
-        5) It should be a valid consulting proposal section example not an introduction
-        6) Don't generate search queries which are already generated and can be view in messages below.
+    You are an expert research assistant helping to retrieve real-world consulting proposal PDFs from the web.
+    """
+
+    human_prompt = """
+    You are given a problem statement describing a real-world consulting need.
+
+    Generate 3 short web search queries to find real consulting documents
+    (strictly only PDFs), not blogs or definitions.
+
+    Do not include full sentences.
+    Do not repeat any previously generated query.
+
+    Generated Queries:
+    {generated_queries}
+
+    Inputs:
+    - Section: {proposal_section}
+    - Industry: {industry}
+    - Problem Statement Keywords: {problem_statement}
+
+    Rules:
+    1) Output should be strictly in json like below.
+    2) pdf should be added in query search query.
+    3) Include exact section name in every query.
+
+    Output format:
+    {{
+        "search_queries": ["query1", "query2", ..]
+    }}
     """
 
     query_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
-            MessagesPlaceholder(variable_name='messages'),
-            ("human", "Section name: {proposal_section}\n\nClient's Industry: {industry}")
+            ("human", human_prompt)
         ]
     )
 
-    return query_prompt | structured_output
+    parser = PydanticOutputParser(pydantic_object=DocumentSearchQuery)
+    return query_prompt | llm | parser
     
