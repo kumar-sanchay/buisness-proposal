@@ -110,7 +110,7 @@ This ensures every proposal is **context-aware, industry-aligned, and client-spe
 
 ### Running Agent
 <p align="center">
-  <img src="media/images/generating.PNG" width="800" />
+  <img src="media/images/generating.PNG" width="400" />
 </p>
 
 
