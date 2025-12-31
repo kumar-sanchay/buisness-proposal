@@ -1,58 +1,99 @@
+# AI Consulting & Service Proposal Generator
 
-# AI Business Proposal Generator
+An intelligent, agent-driven system for generating **high-quality consulting and service proposals** that align with real-world industry standards.
 
-## Overview
+Unlike generic AI writing tools, this platform **automatically researches similar proposals, client context, and industry-specific practices** before generating content. The result is professional, human-like proposals that follow the **correct tone, structure, and expectations of the target industry**—without requiring manual research from the user.
 
-AI Business Proposal Generator is an intelligent system that creates customized business proposals by learning from your firm's unique style and industry best practices. Unlike generic AI-generated proposals, this tool leverages a Retrieval-Augmented Generation (RAG) architecture to blend reference materials from published proposals with your organization's historical documents, ensuring proposals sound authentic and maintain your firm's distinctive tone.
+---
 
-## Key Features
+## 🚀 Overview
 
-- **RAG-Based Generation**: Combines public business proposal references with your internal proposal history
-- **Tone Preservation**: Generates proposals in your firm's authentic voice, not generic AI-speak
-- **Best Practice Integration**: Incorporates industry standards from published successful proposals
-- **Customizable Output**: Learns from your past proposals to maintain consistency
+The **AI Consulting & Service Proposal Generator** is designed to eliminate manual research and repetitive proposal drafting.
 
-## Technology Stack
+Before writing a single word, the system deploys multiple AI agents to:
+- Search and analyze **existing consulting/service proposals** from the web
+- Understand **industry norms, terminology, and writing style**
+- Research the **client’s business, market, and challenges**
+- Gather all required contextual information automatically
 
-- **Language**: Python
-- **Dependency Management**: Poetry
-- **LLM Framework**: LangChain
-- **Vector Database**: ChromaDB
-- **Environment Config**: Python-dotenv
+This ensures every proposal is **context-aware, industry-aligned, and client-specific**, while significantly reducing preparation time.
 
-## Project Status
+---
 
-🔬 **POC & Research Level** - Currently in proof-of-concept and research phase
+## 🎯 Key Features
 
-## Setup Instructions
+- **Agent-Based Architecture**  
+  Uses coordinated AI agents to perform research, analysis, and proposal generation.
 
-### Prerequisites
+- **Automatic Online Research**  
+  Collects relevant consulting proposals, industry references, and client information directly from the web—no manual input required.
 
-- Python 3.10+
-- Poetry
+- **Industry-Specific Tone & Structure**  
+  Adapts language, formatting, and proposal flow based on the client’s industry and problem domain.
 
-### Installation
+- **Non–AI-Sounding Output**  
+  Learns from real consulting documents to produce proposals that follow professional standards and human writing patterns.
 
-1. **Clone the repository** and navigate to the project directory
+- **Client-Aware Proposal Generation**  
+  Automatically researches the client’s background, market, and challenges before generating content.
 
-2. **Configure environment variables**:
-    ```bash
-    cp env.sample .env
-    ```
-    Edit `.env` and add all required API keys and configuration variables
+- **Reusable & Scalable**  
+  Easily extendable to new industries, proposal types, and consulting domains.
 
-3. **Install dependencies**:
-    ```bash
-    cd proposal
-    poetry install
-    ```
+---
 
-4. **Activate the virtual environment**:
-    ```bash
-    poetry env activate
-    ```
+## 🧠 How It Works
 
-4. **Run pytest tests**:
-    ```bash
-    poetry run pytest
-    ```
+1. **Input**: Minimal user input (industry, problem statement, or client reference)
+2. **Research Phase**:
+   - Agents search for similar proposals and industry materials
+   - Client and market data is gathered automatically
+3. **Analysis Phase**:
+   - Extracts structure, tone, and best practices
+4. **Generation Phase**:
+   - Produces a professional, tailored consulting/service proposal
+
+---
+
+## 🛠 Technology Stack
+
+- **Language**: Python  
+- **Dependency Management**: Poetry  
+- **LLM Frameworks**: LangChain, LangGraph  
+- **Vector Database**: ChromaDB  
+- **Environment Configuration**: Python-dotenv  
+- **Web Access & Search**: Tavily
+- **UI**: Streamlit
+
+---
+
+## 📌 Use Cases
+
+- Consulting firms preparing client proposals
+- Freelancers creating service proposals
+- Pre-sales and business development teams
+- AI-driven proposal automation platforms
+
+---
+
+## 📈 Benefits
+
+- Saves hours of manual research and writing
+- Produces industry-aligned, professional proposals
+- Reduces dependency on generic AI outputs
+- Improves proposal quality and acceptance rate
+
+---
+
+## 🔮 Future Enhancements
+
+- Support for RFP/RFQ-specific proposal formats
+- Proposal scoring and improvement suggestions
+- Multi-language proposal generation
+- Versioned proposal comparison
+
+---
+
+## 📄 License
+
+MIT License
