@@ -19,30 +19,30 @@ def get_document_grading_chain(llm: BaseChatModel) -> str:
     """
 
     human_prompt = """
-    Assess whether the following document is relevant for generating
-    the specified consulting proposal section.
+        Assess whether the following document is relevant for generating
+        the specified consulting proposal section.
 
-    Grading rules:
-    - Return "yes" if the document is even partially useful (≈10% \or more)
-    for understanding structure, content, or language of the section.
-    - Return "yes" if the document contains similar sections, headings,
-    or proposal-style content.
-    - Return "yes" if the document is relevant to any domain seperated by commas below.
-    - Return "no" only if the document is completely unrelated
-    (e.g., definitions, blogs, news, marketing pages).
+        Grading rules:
+        - Return "yes" if the document is even partially useful (≈10% \or more)
+        for understanding structure, content, or language of the section.
+        - Return "yes" if the document contains similar sections, headings,
+        or proposal-style content.
+        - Return "yes" if the document is relevant to any domain seperated by commas below.
+        - Return "no" only if the document is completely unrelated
+        (e.g., definitions, blogs, news, marketing pages).
 
-    Output rules:
-    - Respond with ONLY one word: yes or no
-    - No explanations
+        Output rules:
+        - Respond with ONLY one word: yes or no
+        - No explanations
 
-    Section to generate:
-    {section}
+        Section to generate:
+        {section}
 
-    Document content:
-    {document}
+        Document content:
+        {document}
 
-    Domain:
-    {requirement}
+        Domain:
+        {requirement}
 
     """
 

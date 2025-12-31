@@ -20,28 +20,37 @@ LOGGER = logging.getLogger(__name__)
 
 
 def download_pdf_into_temp(url: str):
-    LOGGER.info(f"Downloading PDF from URL: {url}")
-    response = requests.get(url=url, stream=True)
-    response.raise_for_status()
 
-    pdf_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-    pdf_file.write(response.content)
-    pdf_file.close()
-
-    return Path(pdf_file.name)
-
-
-def is_pdf_file(path: str) -> bool:
     try:
-        with open(path, "rb") as f:
-            header = f.read(5)
-        return header == b"%PDF-"
-    except Exception:
+        LOGGER.info(f"Downloading PDF from URL: {url}")
+        response = requests.get(url=url, stream=True, timeout=10)
+        response.raise_for_status()
+
+        pdf_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+        pdf_file.write(response.content)
+        pdf_file.close()
+
+        return Path(pdf_file.name)
+    except requests.RequestException as e:
+        LOGGER.error("Error while downloading pdf: ", url)
+        return None
+
+
+def is_pdf_file(url: str) -> bool:
+    
+    try:
+        resp = requests.head(url=url, allow_redirects=True, timeout=10)
+        content_type = resp.headers.get("Content-Type", "").lower()
+        return "application/pdf" in content_type
+    except requests.RequestException as e:
+        LOGGER.error("Error while downloading headers of url: ", url)
         return False
+
 
 
 def is_pdf_pages_under_limit(path: str) -> bool:
     reader = PdfReader(path)
+    LOGGER.info(f"PDF has {len(reader.pages)} pages.")
     return len(reader.pages) <= 50
 
 
@@ -49,12 +58,15 @@ def run_pipeline(url: str, industry: str) -> bool:
     
     LOGGER.info(f"Running document pipeline for URL: {url}")
 
+    if not is_pdf_file(url=url):
+        return False
+        
     pdf_path = None
 
     try:
         pdf_path: Path = download_pdf_into_temp(url)
 
-        if not is_pdf_file(pdf_path) and not is_pdf_pages_under_limit(pdf_path):
+        if not (pdf_path and is_pdf_pages_under_limit(pdf_path)):
             return False
 
         elements: List[Element] = partition_pdf(
@@ -71,7 +83,6 @@ def run_pipeline(url: str, industry: str) -> bool:
         for chunk in chunks:
             chunk.metadata['industry'] = industry
 
-        import pdb;pdb.set_trace();
         save_documents(documents=chunks)
 
     except Exception as e:

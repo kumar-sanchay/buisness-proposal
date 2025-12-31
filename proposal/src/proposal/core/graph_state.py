@@ -49,7 +49,10 @@ class GraphState(TypedDict):
         generated_section: Generated proposal section
     """
     user_requirement: UserRequirement
+    curr_section_heading: str
     section_documents: List[Document]
     client_websearch: List[str]
     generated_section: str
-    generated_section_queries: List[Document] = []
+    generated_section_queries: List[Document]
+    summarized_problem_keys: str
+    doc_search_iter_count: int

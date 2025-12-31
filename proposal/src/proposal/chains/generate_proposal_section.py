@@ -8,16 +8,18 @@ def generate_proposal_section(llm: BaseChatModel):
         You are an expert consulting proposal writer.
 
         CRITICAL RULES (must follow strictly):
-        - Generate ONLY the requested proposal section.
+        - Generate ONLY the requested proposal section and just only 1 output (No section heading or explaination).
         - Use ONLY the information explicitly provided in the input.
         - Do NOT invent client details, metrics, timelines, or pricing.
         - Do NOT assume facts not present in the state.
         - Do NOT reference or mention other proposal sections.
         - If required information is missing, mark it as indicative.
         - Use retrieved documents and web search results ONLY as inspiration for structure and wording,
-        not as factual truth unless they directly align with the provided state.
+          not as factual truth unless they directly align with the provided state.
         - Only use those information from provided details which are required to generate the section.
           For example, you don't have to use budget, timeline, etc while generating text for "executive summary" section.
+        - The “client” refers to the organization to whom this consulting proposal will be submitted.
+          Generate all statements using client-specific web search results and align them with the client’s industry and domain.
 
         Your output must be professional, clear, and aligned with consulting standards.
         """

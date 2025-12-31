@@ -13,14 +13,14 @@ def format_docs(docs: List[Document]):
     return "\n".join([doc.page_content for doc in docs])
 
 
-def get_generate_proposal_section_node(llm: BaseChatModel, proposal_section: str):
+def get_generate_proposal_section_node(llm: BaseChatModel):
     def generate_proposal_section_node(state: GraphState) -> Dict[str, Any]:
 
         LOGGER.info(f"Starting node: generate_proposal_section_node")
 
         generate_section: AIMessage = generate_proposal_section(llm).invoke(
             {
-                'section_name': proposal_section,
+                'section_name': state['curr_section_heading'],
                 'problem_statement': state['user_requirement']['problem_statement'],
                 'proposal_goal': state['user_requirement']['proposal_goal'],
                 'approach': state['user_requirement']['approach'],
@@ -35,7 +35,7 @@ def get_generate_proposal_section_node(llm: BaseChatModel, proposal_section: str
             }
         )
 
-        LOGGER.info(f"Generated proposal section: {proposal_section}")
+        LOGGER.info(f"Generated proposal section: {state['curr_section_heading']}")
         LOGGER.info(f"Section Content: {generate_section.content}")
 
         return {

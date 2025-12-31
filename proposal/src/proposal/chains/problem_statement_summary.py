@@ -12,7 +12,7 @@ def get_problem_statement_summary(llm: BaseChatModel) -> str:
 
         Rules:
         - Use only nouns or short noun phrases
-        - Keep it concise (5–10 items max)
+        - Keep it concise (only 5 fix)
         - Separate items with commas
         - No sentences, no explanations
         - Return just final ouput no explainations.

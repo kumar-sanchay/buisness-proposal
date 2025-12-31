@@ -16,6 +16,10 @@ def get_websearch_client_node(llm: BaseChatModel, tavily: TavilySearch):
 
         LOGGER.info("Starting node: websearch_client_node")
 
+        if state['client_websearch']:
+            LOGGER.info("Client websearch results already exist in state; skipping web search.")
+            return {'client_websearch': state['client_websearch']}
+
         client_name: str = state['user_requirement']['client_info']['client_name']
         client_industry: str = state['user_requirement']['client_info']['industry']
 

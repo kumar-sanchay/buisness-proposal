@@ -11,7 +11,7 @@ from proposal.chains import get_document_grading_chain
 LOGGER = logging.getLogger(__name__)
 
 
-def get_grade_document_node(llm: BaseChatModel, proposal_section: str):
+def get_grade_document_node(llm: BaseChatModel):
     def grade_document(state: GraphState) -> Dict[str, Any]:
 
         LOGGER.info(f"Starting node: grade_document for section")
@@ -23,13 +23,13 @@ def get_grade_document_node(llm: BaseChatModel, proposal_section: str):
             score: str = get_document_grading_chain(llm).invoke({
                 'document': doc,
                 'requirement': state['user_requirement']['problem_statement'],
-                'section': proposal_section,
+                'section': state['curr_section_heading'],
             })
 
             if score == 'yes':
                 relevant_docs.append(doc)
         
-        LOGGER.info(f"Graded documents, {len(relevant_docs)} relevant for section {proposal_section}.")
+        LOGGER.info(f"Graded documents, {len(relevant_docs)} relevant for section {state['curr_section_heading']}.")
 
         return {'section_documents': relevant_docs}
 

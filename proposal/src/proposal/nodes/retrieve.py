@@ -25,17 +25,16 @@ def normalize_chroma_filter(filters: dict | None) -> dict | None:
     return {"$and": [{k: v} for k, v in filters.items()]}
 
 
-def get_retriever_node(llm, retriever, section: str):
+def get_retriever_node(llm, retriever):
     def retriever_node(state: GraphState) -> Dict[str, Any]:
         
         LOGGER.info("Starting node: retriever_node")
 
         problem_statement: str = state['user_requirement']['problem_statement']
-        # documents: List[Document] = retriever.invoke(problem_statement)
 
         normalized_filter = normalize_chroma_filter({
             'industry': state['user_requirement']['client_info']['industry'],
-            'section': section.lower()
+            'section': state['curr_section_heading'].lower()
         })
 
         summaried_statement = get_problem_statement_summary(llm=llm).invoke({'problem_statement': problem_statement})
@@ -43,7 +42,7 @@ def get_retriever_node(llm, retriever, section: str):
 
         documents: List[Document] = retriever.similarity_search(
             summaried_statement,
-            k=3,
+            k=2,
             filter=normalized_filter
         )
 

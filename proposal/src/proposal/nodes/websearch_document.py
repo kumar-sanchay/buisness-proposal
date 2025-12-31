@@ -14,7 +14,7 @@ from proposal.indexing.document_pipeline import run_pipeline
 LOGGER = logging.getLogger(__name__)
 
 
-def get_websearch_document_node(llm: BaseChatModel, proposal_section: str, tavily: TavilySearchResults):
+def get_websearch_document_node(llm: BaseChatModel, tavily: TavilySearchResults):
     def websearch_document_node(state: GraphState) -> Dict[str, Any]:
         
         LOGGER.info(f"Starting node: websearch_document_node")
@@ -22,13 +22,13 @@ def get_websearch_document_node(llm: BaseChatModel, proposal_section: str, tavil
         client_industry: str = state['user_requirement']['client_info']['industry']
 
         doc_search_queries: DocumentSearchQuery = get_section_search_queries(llm).invoke({
-            'proposal_section': proposal_section,
+            'proposal_section': state['curr_section_heading'],
             'industry': client_industry,
             'generated_queries': "\n".join(state['generated_section_queries']),
             "problem_statement": state['user_requirement']['problem_statement']     
         })
 
-        LOGGER.info(f"Generated {len(doc_search_queries.search_queries)} search queries for section {proposal_section}.")
+        LOGGER.info(f"Generated {len(doc_search_queries.search_queries)} search queries for section {state['curr_section_heading']}.")
         LOGGER.info(f"Search Queries: {doc_search_queries.search_queries}")
 
         LOGGER.info("Performing web search...")
@@ -42,6 +42,8 @@ def get_websearch_document_node(llm: BaseChatModel, proposal_section: str, tavil
                 is_passed: bool = run_pipeline(url, industry=client_industry)
                 LOGGER.info(f"Document at URL {url} passed the pipeline: {is_passed}")
         
-        return {'generated_section_queries': state['generated_section_queries'] + doc_search_queries.search_queries}
+        return {'generated_section_queries': state['generated_section_queries'] + doc_search_queries.search_queries,
+                'doc_search_iter_count': state['doc_search_iter_count'] + 1
+                }
     
     return websearch_document_node

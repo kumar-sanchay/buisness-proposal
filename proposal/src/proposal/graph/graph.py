@@ -1,3 +1,5 @@
+import logging
+from typing import List, Dict, Generator, Tuple
 from dotenv import load_dotenv
 from proposal.core.logging_setup import setup_logging
 load_dotenv()
@@ -10,14 +12,18 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 from proposal.core.graph_state import GraphState, UserRequirement, ClientInfo
 from proposal.graph import constants
 from proposal.nodes import (get_generate_proposal_section_node, get_retriever_node, get_grade_document_node,
-                            get_websearch_client_node, get_websearch_document_node)
+                            get_websearch_client_node, get_websearch_document_node, get_summarize_problem_node)
 
 from proposal.core.llm import get_llm
 from proposal.indexing.vectorstore import get_retriever
 
 
+LOGGER = logging.getLogger(__name__)
+MAX_DOC_SEARCH_ITERATION = 2
 
-def build_graph(user_requirement: UserRequirement, proposal_section: str = "Executive Summary"):
+
+def build_graph():
+
     llm = get_llm()
     tavily_search = TavilySearch(max_results=2)
 
@@ -29,19 +35,20 @@ def build_graph(user_requirement: UserRequirement, proposal_section: str = "Exec
     retriever = get_retriever()
 
     graph = StateGraph(GraphState)
-    graph.add_node(constants.RETRIEVE, get_retriever_node(llm= llm, retriever=retriever, section=proposal_section))
-    graph.add_node(constants.GRADE_DOCUMENTS, get_grade_document_node(llm=llm, proposal_section=proposal_section))
-    graph.add_node(constants.WEBSEARCH_DOCUMENT, get_websearch_document_node(llm=llm, proposal_section=proposal_section,
-                                                                              tavily=tavily_search_results))
+    graph.add_node(constants.SUMMARIZE_PROBLEM, get_summarize_problem_node(llm=llm))
+    graph.add_node(constants.RETRIEVE, get_retriever_node(llm=llm, retriever=retriever))
+    graph.add_node(constants.GRADE_DOCUMENTS, get_grade_document_node(llm=llm))
+    graph.add_node(constants.WEBSEARCH_DOCUMENT, get_websearch_document_node(llm=llm, tavily=tavily_search_results))
     graph.add_node(constants.WEBSEARCH_CLIENT, get_websearch_client_node(llm=llm, tavily=tavily_search))
-    graph.add_node(constants.GENERATE, get_generate_proposal_section_node(llm=llm, proposal_section=proposal_section))
+    graph.add_node(constants.GENERATE, get_generate_proposal_section_node(llm=llm))
 
-    graph.set_entry_point(constants.RETRIEVE)
+    graph.set_entry_point(constants.SUMMARIZE_PROBLEM)
+    graph.add_edge(constants.SUMMARIZE_PROBLEM, constants.RETRIEVE)
     graph.add_edge(constants.RETRIEVE, constants.GRADE_DOCUMENTS)
 
     def web_search_document_condition(state: GraphState):
 
-        if len(state["section_documents"]) >= 1:
+        if len(state["section_documents"]) >= 1 or state["doc_search_iter_count"] >= MAX_DOC_SEARCH_ITERATION:
             return constants.WEBSEARCH_CLIENT
         return constants.WEBSEARCH_DOCUMENT
     
@@ -57,62 +64,96 @@ def build_graph(user_requirement: UserRequirement, proposal_section: str = "Exec
     graph.add_edge(constants.WEBSEARCH_CLIENT, constants.GENERATE)
     graph.add_edge(constants.GENERATE, END)
 
-    app = graph.compile()
+    compiled_graph = graph.compile()
     # app.get_graph().draw_mermaid_png(output_file_path="test_graph.png")
-    
-    # test_user_requirement: UserRequirement = {
-    #     "problem_statement": (
-    #         "The client is struggling with slow and inconsistent creation of "
-    #         "custom consulting proposals, leading to longer sales cycles and "
-    #         "reduced win rates."
-    #     ),
-    #     "client_info": {
-    #         "client_name": "Acme Financial Services",
-    #         "industry": "Banking and Financial Services"
-    #     },
-    #     "proposal_goal": (
-    #         "Design and implement an AI-powered consulting proposal generator "
-    #         "that can create high-quality, client-specific proposal sections "
-    #         "using internal knowledge and external research."
-    #     ),
-    #     "approach": (
-    #         "Leverage Retrieval-Augmented Generation (RAG) with a modular "
-    #         "LangGraph-based workflow. Use vector databases for internal content, "
-    #         "web search for external insights, and LLM-based scoring and refinement "
-    #         "for proposal sections."
-    #     ),
-    #     "timeline": "8–10 weeks including discovery, implementation, testing, and rollout",
-    #     "scope_exclusions": (
-    #         "Does not include CRM integration, UI/UX design for a sales portal, "
-    #         "or long-term model fine-tuning beyond initial deployment."
-    #     ),
-    #     "budget_range": "USD 50,000 – 75,000",
-    #     "technical_depth": "Medium to High (target audience includes technical decision-makers)"
-    # }
+
+    return compiled_graph
+
+
+def run_graph(
+    user_requirement: UserRequirement,
+    proposal_sections: List[str],
+) -> Generator[Tuple[str, str, str], None, Dict[str, str]]:
+
+    graph = build_graph()
+    section_output_map: Dict[str, str] = {}
+
     initial_state = GraphState(
         user_requirement=user_requirement,
-        documents=[],
         client_websearch=[],
-        generated_section="",
-        generated_section_queries=[]
+        summarized_problem_keys=""
     )
 
-    result: GraphState = app.invoke(initial_state)
-    return result["generated_section"]
+    for section in proposal_sections:
+        LOGGER.info(f"Generating proposal section: {section}")
+
+
+        initial_state.update({
+            "curr_section_heading": section,
+            "doc_search_iter_count": 0,
+            "generated_section": "",
+            "generated_section_queries": [],
+            "section_documents": []
+        })
+
+        final_state = None
+
+        for event in graph.stream(initial_state):
+
+            if isinstance(event, dict) and "event" in event:
+                node_name = event.get("name", "Unknown Node")
+                event_type = event["event"]
+
+                yield section, node_name, event_type
+
+                if event_type == "on_chain_end" and event.get("state"):
+                    final_state = event["state"]
+
+            elif isinstance(event, dict) and len(event) == 1:
+                node_name = list(event.keys())[0]
+
+                yield section, node_name, "node_output"
+
+            elif isinstance(event, dict) and "state" in event:
+                yield section, "Graph State", "state_update"
+                final_state = event["state"]
+
+            else:
+                yield section, "Graph", "unknown_event"
+        
+        if event and event.get("generate"):
+            section_output_map[section] = event['generate']['generated_section']
+        else:
+            section_output_map[section] = ""
+
+        LOGGER.info(f"Completed proposal section: {section}")
+
+    return section_output_map
+
 
 
 if __name__ == '__main__':
+
+    sections = [
+        "Executive Summary",
+        "Approach",
+        "Timeline"
+    ]
+    
     user_requirement: UserRequirement = {
-        "problem_statement": '',
+        "problem_statement": 'The firm relies on fragmented data sources and manual research processes for investment analysis,'
+        ' risk assessment, and regulatory review. This results in slower decision-making, inconsistent insights across teams, '
+        'higher operational costs, and increased compliance risk in a fast-moving market environment.',
         "client_info": {
-            "client_name": '',
-            "industry": '',
+            "client_name": 'Acme Financial Services',
+            "industry": 'Banking and Financial Services',
         },
-        "proposal_goal": '',
+        "proposal_goal": 'To implement an AI-enabled solution that automates financial document analysis and research workflows,'
+        ' improves decision accuracy and speed, reduces operational effort, and strengthens compliance across investment and banking operations.',
         "approach": '',
         "timeline": '',
         "scope_exclusions": '',
         "budget_range": '',
         "technical_depth": '',
     }
-    build_graph(user_requirement=user_requirement)
+    print(run_graph(user_requirement=user_requirement, proposal_sections=sections))
