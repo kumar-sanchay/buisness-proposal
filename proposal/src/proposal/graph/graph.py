@@ -1,10 +1,5 @@
 import logging
 from typing import List, Dict, Generator, Tuple
-from dotenv import load_dotenv
-from proposal.core.logging_setup import setup_logging
-load_dotenv()
-setup_logging()
-
 from langgraph.graph import StateGraph, END
 from langchain_tavily import TavilySearch
 from langchain_community.tools.tavily_search import TavilySearchResults
@@ -133,6 +128,11 @@ def run_graph(
 
 
 if __name__ == '__main__':
+
+    from dotenv import load_dotenv
+    from proposal.core.logging_setup import setup_logging
+    load_dotenv()
+    setup_logging()
 
     sections = [
         "Executive Summary",
