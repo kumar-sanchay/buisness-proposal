@@ -57,11 +57,16 @@ with left_col:
     
     
     if st.button("📥 Load Sample Data"):
-        st.session_state["problem_statement"] = "The client's legacy system cannot handle real-time transaction analysis efficiently."
-        st.session_state["proposal_goal"] = "Deploy an AI-powered platform to automate proposal generation with high accuracy."
+        st.session_state["problem_statement"] = 'The firm relies on fragmented data sources and manual research processes for investment analysis, risk assessment,\
+and regulatory review. This results in slower decision-making, inconsistent insights across teams, higher operational costs, and increased compliance\
+risk in a fast-moving market environment.'
+
+        st.session_state["proposal_goal"] = 'To implement an AI-enabled solution that automates financial document analysis and research workflows,\
+improves decision accuracy and speed, reduces operational effort, and strengthens compliance across investment and banking operations.'
+
         st.session_state["client_name"] = "Acme Financial Services"
         st.session_state["industry"] = "Banking & Financial Services"
-        st.session_state["approach"] = "Use agentic AI with RAG architecture for document retrieval and section-wise proposal generation."
+        st.session_state["approach"] = ""
         st.session_state["timeline"] = "6 weeks"
         st.session_state["scope_exclusions"] = "Excludes client-side integration and post-deployment training."
         st.session_state["budget_range"] = "$50k - $100k"
