@@ -82,6 +82,7 @@ def run_pipeline(url: str, industry: str) -> bool:
         
         for chunk in chunks:
             chunk.metadata['industry'] = industry
+            chunk.metadata['source_url'] = url
 
         save_documents(documents=chunks)
 

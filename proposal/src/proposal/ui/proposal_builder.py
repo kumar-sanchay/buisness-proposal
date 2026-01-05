@@ -1,3 +1,4 @@
+import logging
 from dotenv import load_dotenv
 from proposal.core.logging_setup import setup_logging
 load_dotenv()
@@ -6,6 +7,9 @@ setup_logging()
 import streamlit as st
 from proposal.core.graph_state import UserRequirement, ClientInfo
 from proposal.graph.graph import run_graph
+
+
+LOGGER = logging.getLogger(__name__)
 
 st.set_page_config(
     page_title="AI Consulting Proposal Builder",
@@ -250,9 +254,29 @@ with right_col:
                     st.markdown("## 📄 Generated Proposal")
                     for section, content in section_results.items():
                         st.markdown(f"### {section}")
-                        st.write(content)
+                        st.write(content["output"])
+
+                        sources = content.get("sources", [])
+
+                        if sources:
+                            max_sources = 2
+                            shown_sources = sources[:max_sources]
+                            remaining = len(sources) - max_sources
+
+                            sources_html = "<br>".join(
+                                [f"<a href='{url}' target='_blank'>{url}</a>" for url in shown_sources]
+                            )
+
+                            if remaining > 0:
+                                sources_html += f"<br>+{remaining} more"
+
+                            st.markdown(
+                                f"<div style='font-size: 12px; color: gray;'>🔗 Sources:<br>{sources_html}</div>",
+                                unsafe_allow_html=True
+                            )
 
             except Exception as e:
+                LOGGER.exception(e)
                 st.error(f"❌ Graph execution failed: {e}")
 
     else:

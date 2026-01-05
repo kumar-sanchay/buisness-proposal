@@ -39,6 +39,7 @@ def get_generate_proposal_section_node(llm: BaseChatModel):
         LOGGER.info(f"Section Content: {generate_section.content}")
 
         return {
-            'generated_section': generate_section.content
+            'generated_section': generate_section.content,
+            'section_documents': state['section_documents']
         }
     return generate_proposal_section_node

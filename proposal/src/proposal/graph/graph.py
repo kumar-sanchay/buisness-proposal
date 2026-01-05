@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from typing import List, Dict, Generator, Tuple
 from langgraph.graph import StateGraph, END
 from langchain_tavily import TavilySearch
@@ -71,7 +72,7 @@ def run_graph(
 ) -> Generator[Tuple[str, str, str], None, Dict[str, str]]:
 
     graph = build_graph()
-    section_output_map: Dict[str, str] = {}
+    section_output_map: Dict[str, str] = defaultdict(dict)
 
     initial_state = GraphState(
         user_requirement=user_requirement,
@@ -115,11 +116,13 @@ def run_graph(
 
             else:
                 yield section, "Graph", "unknown_event"
-        
+
         if event and event.get("generate"):
-            section_output_map[section] = event['generate']['generated_section']
+            section_output_map[section]["output"] = event['generate']['generated_section']
+            section_output_map[section]["sources"] = [e.metadata['source_url'] for e in event['generate']['section_documents']]
         else:
-            section_output_map[section] = ""
+            section_output_map[section]["output"] = ""
+            section_output_map[section]["sources"] = []
 
         LOGGER.info(f"Completed proposal section: {section}")
 
